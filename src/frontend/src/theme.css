@@ -1,0 +1,208 @@
+:root {
+  font-family:
+    'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color: #dce6f2;
+  background:
+    radial-gradient(circle at top left, rgba(100, 180, 255, 0.18), transparent 32%),
+    radial-gradient(circle at top right, rgba(129, 140, 248, 0.16), transparent 28%),
+    linear-gradient(180deg, #09111f 0%, #0d1728 42%, #0c1522 100%);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  --app-bg: #0b1320;
+  --panel-bg: rgba(11, 19, 32, 0.72);
+  --panel-strong: rgba(15, 26, 43, 0.88);
+  --panel-soft: rgba(132, 170, 255, 0.08);
+  --border-soft: rgba(148, 163, 184, 0.18);
+  --border-strong: rgba(110, 168, 254, 0.28);
+  --text-primary: #edf4ff;
+  --text-secondary: #93a7c1;
+  --brand: #7dd3fc;
+  --brand-strong: #38bdf8;
+  --accent: #a5b4fc;
+  --success: #6ee7b7;
+  --warning: #fbbf24;
+  --shadow-lg: 0 24px 70px rgba(3, 8, 20, 0.45);
+  --shadow-md: 0 18px 45px rgba(3, 8, 20, 0.32);
+  --radius-xl: 28px;
+  --radius-lg: 22px;
+  --radius-md: 16px;
+  --sidebar-width: 288px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  min-height: 100vh;
+}
+
+#app {
+  width: auto;
+  max-width: none;
+  margin: 0;
+  text-align: initial;
+  border: none;
+  display: block;
+}
+
+body {
+  margin: 0;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+.app-shell {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+.app-shell::before,
+.app-shell::after {
+  content: '';
+  position: fixed;
+  inset: auto;
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(24px);
+}
+
+.app-shell::before {
+  top: 72px;
+  left: 8%;
+  width: 280px;
+  height: 280px;
+  background: rgba(45, 212, 191, 0.12);
+  border-radius: 50%;
+}
+
+.app-shell::after {
+  top: 180px;
+  right: 10%;
+  width: 360px;
+  height: 360px;
+  background: rgba(96, 165, 250, 0.12);
+  border-radius: 50%;
+}
+
+.panel-card {
+  background: var(--panel-bg);
+  border: 1px solid var(--border-soft);
+  box-shadow: var(--shadow-md);
+  backdrop-filter: blur(18px);
+}
+
+.section-title {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.section-subtitle {
+  margin: 0.45rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+}
+
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.32rem 0.72rem;
+  border-radius: 999px;
+  border: 1px solid rgba(125, 211, 252, 0.22);
+  background: rgba(125, 211, 252, 0.08);
+  color: #d8f4ff;
+  font-size: 0.82rem;
+}
+
+.status-chip::before {
+  content: '';
+  width: 0.48rem;
+  height: 0.48rem;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.9;
+}
+
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition:
+    opacity 0.24s ease,
+    transform 0.24s ease;
+}
+
+.fade-slide-enter-from,
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+.el-menu {
+  border-right: none !important;
+}
+
+.el-menu-item,
+.el-sub-menu__title {
+  border-radius: 16px;
+}
+
+.el-progress-bar__outer {
+  background-color: rgba(148, 163, 184, 0.12) !important;
+}
+
+.el-table {
+  --el-table-bg-color: transparent;
+  --el-table-tr-bg-color: transparent;
+  --el-table-header-bg-color: rgba(148, 163, 184, 0.06);
+  --el-table-border-color: rgba(148, 163, 184, 0.12);
+  --el-table-row-hover-bg-color: rgba(125, 211, 252, 0.06);
+  --el-table-text-color: #dbe7f5;
+  --el-table-header-text-color: #9db0c8;
+}
+
+.el-input__wrapper,
+.el-select__wrapper,
+.el-textarea__inner {
+  background: rgba(15, 23, 42, 0.6) !important;
+  box-shadow: 0 0 0 1px rgba(148, 163, 184, 0.12) inset !important;
+}
+
+.el-button--primary {
+  --el-button-bg-color: #0ea5e9;
+  --el-button-border-color: #0ea5e9;
+  --el-button-hover-bg-color: #38bdf8;
+  --el-button-hover-border-color: #38bdf8;
+  --el-button-active-bg-color: #0284c7;
+  --el-button-active-border-color: #0284c7;
+}
+
+@media (max-width: 1024px) {
+  :root {
+    --sidebar-width: 100%;
+  }
+}
