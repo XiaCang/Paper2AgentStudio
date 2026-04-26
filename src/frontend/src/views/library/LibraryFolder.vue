@@ -528,12 +528,12 @@ const handleDeleteFolder = async (folder: LibraryFolder) => {
   display: flex;
   flex-direction: column;
   overflow: visible;
-  position: absolute;
+  position: fixed;
   left: 0;
-  top: 0;
+  top: 64px; /* 主导航栏高度 */
   bottom: 0;
   z-index: 50;
-  margin-left: -300px;
+  margin-left: -280px;
   transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
 }

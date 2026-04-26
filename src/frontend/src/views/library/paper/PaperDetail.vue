@@ -59,6 +59,12 @@ const handleDrawerOpen = () => {
   }
 }
 
+// 关闭抽屉前的确认（可选）
+const handleBeforeClose = (done: () => void) => {
+  // 直接关闭，不做拦截
+  done()
+}
+
 // 保存关键点
 const handleSaveKeyPoints = () => {
   if (!props.paper) return
@@ -97,7 +103,7 @@ const statusClassMap: Record<LibraryPaper['status'], string> = {
     title="论文详情"
     direction="rtl"
     size="750px"
-    :before-close="handleDrawerOpen"
+    :before-close="handleBeforeClose"
     @open="handleDrawerOpen"
   >
     <div v-if="paper" class="paper-detail">
@@ -133,8 +139,7 @@ const statusClassMap: Record<LibraryPaper['status'], string> = {
       <!-- 关键点编辑区(四维度结构化) -->
       <section class="keypoints-section">
         <h3 class="section-title">
-          <el-icon><Check /></el-icon>
-          关键点（Key Points）- 知识体系最小结构化单元
+          关键点（Key Points）
         </h3>
         <p class="section-description">
           通过大语言模型从论文全文中提取的四个维度核心要素

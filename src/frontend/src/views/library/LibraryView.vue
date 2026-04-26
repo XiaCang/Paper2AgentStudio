@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { EditPen, FolderOpened, Search } from '@element-plus/icons-vue'
+import { EditPen, FolderOpened, Search, Delete } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { computed, ref } from 'vue'
+import { computed, ref, h } from 'vue'
 
 import type { LibraryPaper, PaperKeyPoints } from '../../api/library'
 import { saveKeyPointsApi } from '../../api/library'
@@ -188,6 +188,97 @@ const handleReview = (paper: LibraryPaper) => {
   paperDetailVisible.value = true
 }
 
+// 删除论文
+const handleDeletePaper = async (paper: LibraryPaper) => {
+  try {
+    await ElMessageBox({
+      title: '删除论文',
+      message: h('div', { class: 'folder-operation-dialog' }, [
+        h('p', { class: 'dialog-tip dialog-warning' }, `确定要删除论文 "${paper.title}" 吗？`),
+        h('p', { class: 'dialog-hint' }, '请选择删除范围：')
+      ]),
+      confirmButtonText: selectedFolderId.value !== 'all' ? '从所有位置彻底删除' : '从所有位置删除',
+      cancelButtonText: selectedFolderId.value !== 'all' ? '仅从当前文件夹移除' : '取消',
+      showCancelButton: true,
+      customClass: 'folder-operation-message-box',
+      distinguishCancelAndClose: true,
+      beforeClose: (action, instance, done) => {
+        if (action === 'confirm') {
+          // 用户选择了"从所有位置彻底删除"
+          done()
+        } else if (action === 'cancel' && selectedFolderId.value !== 'all') {
+          // 用户在非全部视图下选择了"仅从当前文件夹移除"
+          done()
+        } else {
+          // 用户关闭对话框或在全部视图下点击取消
+          done()
+        }
+      }
+    })
+    
+    // 执行全局删除(或全部视图下的直接删除)
+    if (selectedFolderId.value === 'all') {
+      // 在"全部论文"视图下,直接从全局删除
+      await performGlobalDelete(paper)
+    }
+  } catch (action) {
+    if (action === 'confirm') {
+      // 用户点击了"从所有位置彻底删除"按钮
+      try {
+        await ElMessageBox.confirm(
+          '此操作将从所有文件夹中彻底删除该论文,且不可恢复。确定要继续吗?',
+          '警告',
+          {
+            confirmButtonText: '确定删除',
+            cancelButtonText: '取消',
+            type: 'warning',
+          }
+        )
+        
+        await performGlobalDelete(paper)
+      } catch {
+        // 用户取消了彻底删除
+      }
+    } else if (action === 'cancel' && selectedFolderId.value !== 'all') {
+      // 用户点击了"仅从当前文件夹移除"按钮
+      const folder = folders.value.find(f => f.id === selectedFolderId.value)
+      if (folder) {
+        const index = folder.paperIds.indexOf(paper.id)
+        if (index > -1) {
+          folder.paperIds.splice(index, 1)
+          ElMessage.success('已从当前文件夹移除')
+        }
+      }
+    }
+    // 用户关闭对话框,不做任何操作
+  }
+}
+
+// 执行全局删除
+const performGlobalDelete = async (paper: LibraryPaper) => {
+  // 从所有文件夹中移除
+  folders.value.forEach(folder => {
+    const removePaperFromFolder = (f: any) => {
+      const index = f.paperIds.indexOf(paper.id)
+      if (index > -1) {
+        f.paperIds.splice(index, 1)
+      }
+      if (f.children) {
+        f.children.forEach(removePaperFromFolder)
+      }
+    }
+    removePaperFromFolder(folder)
+  })
+  
+  // 从论文列表中删除
+  const index = papers.value.findIndex(p => p.id === paper.id)
+  if (index > -1) {
+    papers.value.splice(index, 1)
+  }
+  
+  ElMessage.success('论文已彻底删除')
+}
+
 // 保存关键点（从抽屉组件触发）
 const handleSaveKeyPoints = async (paperId: string, keyPoints: PaperKeyPoints) => {
   try {
@@ -214,11 +305,6 @@ const handlePreviewPdf = (paperId: string) => {
   // 例如：window.open(`/papers/${paperId}/pdf`, '_blank')
 }
 
-const handleSave = () => {
-  // 此方法已被PaperDetail组件中的handleSaveKeyPoints替代
-  ElMessage.info('请使用论文详情抽屉中的保存功能')
-}
-
 const statusClassMap: Record<LibraryPaper['status'], string> = {
   Processing: 'is-warning',
   Completed: 'is-success',
@@ -227,7 +313,7 @@ const statusClassMap: Record<LibraryPaper['status'], string> = {
 </script>
 
 <template>
-  <section class="library-page">
+  <section class="library-page" :class="{ 'folder-panel-open': folderPanelVisible }">
     <!-- 文件夹抽屉组件 -->
     <LibraryFolder
       v-model:selected-folder-id="selectedFolderId"
@@ -275,10 +361,16 @@ const statusClassMap: Record<LibraryPaper['status'], string> = {
           </el-table-column>
           <el-table-column label="Action" width="200">
             <template #default="{ row }">
-              <el-button text @click="handleReview(row)">
-                <el-icon><EditPen /></el-icon>
-                Review Key Points 
-              </el-button>
+              <div class="action-buttons">
+                <el-button text @click="handleReview(row)">
+                  <el-icon><EditPen /></el-icon>
+                  详情
+                </el-button>
+                <el-button text type="danger" @click="handleDeletePaper(row)">
+                  <el-icon><Delete /></el-icon>
+                  删除
+                </el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -304,6 +396,12 @@ const statusClassMap: Record<LibraryPaper['status'], string> = {
   gap: 0.9rem;
   padding: 1.2rem 1.5rem 1.5rem;
   min-width: 0;
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* 当文件夹面板打开时，主内容区右移 */
+.library-page.folder-panel-open .library-main {
+  margin-left: 280px;
 }
 
 .library-header {
@@ -351,6 +449,11 @@ const statusClassMap: Record<LibraryPaper['status'], string> = {
   border-bottom: 1px solid var(--line-soft);
 }
 
+.action-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
 @media (max-width: 820px) {
   .library-header {
     flex-direction: column;
@@ -366,5 +469,69 @@ const statusClassMap: Record<LibraryPaper['status'], string> = {
     width: 100%;
     min-width: 0;
   }
+}
+</style>
+
+<style>
+/* 文件夹操作弹窗全局样式 */
+.folder-operation-message-box {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.folder-operation-message-box .el-message-box__header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.folder-operation-message-box .el-message-box__title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.folder-operation-message-box .el-message-box__content {
+  padding: 24px;
+}
+
+.folder-operation-message-box .el-message-box__btns {
+  padding: 16px 24px 24px;
+  display: flex;
+  gap: 12px;
+}
+
+.folder-operation-message-box .el-button--primary {
+  background-color: var(--brand);
+  border-color: var(--brand);
+}
+
+.folder-operation-message-box .el-button--default {
+  background-color: white;
+  border-color: var(--line-soft);
+}
+
+.folder-operation-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dialog-tip {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.dialog-warning {
+  color: var(--danger);
+  font-weight: 500;
+}
+
+.dialog-hint {
+  margin: 8px 0 0 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
 }
 </style>
