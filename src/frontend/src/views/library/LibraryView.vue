@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { EditPen, FolderOpened, Search, Delete } from '@element-plus/icons-vue'
+import { EditPen, Search, Delete } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, ref, h } from 'vue'
 import { useRouter } from 'vue-router'
@@ -20,8 +20,6 @@ const searchQuery = ref('')
 const selectedPaperId = ref('paper-4')
 const folderPanelVisible = ref(true)
 const selectedFolderId = ref<string>('all')
-const editingFolderId = ref<string | null>(null)
-const editingFolderName = ref('')
 const expandedFolders = ref<Set<string>>(new Set())
 const paperDetailVisible = ref(false)
 const selectedPaper = ref<LibraryPaper | null>(null)
@@ -204,7 +202,7 @@ const handleDeletePaper = async (paper: LibraryPaper) => {
       showCancelButton: true,
       customClass: 'folder-operation-message-box',
       distinguishCancelAndClose: true,
-      beforeClose: (action, instance, done) => {
+      beforeClose: (action, _instance, done) => {
         if (action === 'confirm') {
           // 用户选择了"从所有位置彻底删除"
           done()

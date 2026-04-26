@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ArrowRight, FolderAdd } from '@element-plus/icons-vue'
+import { ArrowRight, FolderAdd, Folder } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox, ElSelect, ElOption } from 'element-plus'
-import { ref, computed, h } from 'vue'
+import { computed, h } from 'vue'
 import FolderItem from './FolderItem.vue'
 
 interface LibraryFolder {
@@ -81,7 +81,7 @@ const handleCreateRootFolder = async () => {
       cancelButtonText: '取消',
       showCancelButton: true,
       customClass: 'folder-operation-message-box',
-      beforeClose: (action, instance, done) => {
+      beforeClose: (action, _instance, done) => {
         if (action === 'confirm') {
           if (!folderName.trim()) {
             ElMessage.warning('文件夹名称不能为空')
@@ -127,7 +127,7 @@ const handleCreateSubFolder = async (parentFolder: LibraryFolder) => {
       cancelButtonText: '取消',
       showCancelButton: true,
       customClass: 'folder-operation-message-box',
-      beforeClose: (action, instance, done) => {
+      beforeClose: (action, _instance, done) => {
         if (action === 'confirm') {
           if (!folderName.trim()) {
             ElMessage.warning('文件夹名称不能为空')
@@ -182,7 +182,7 @@ const handleRenameFolder = async (folder: LibraryFolder) => {
       cancelButtonText: '取消',
       showCancelButton: true,
       customClass: 'folder-operation-message-box',
-      beforeClose: (action, instance, done) => {
+      beforeClose: (action, _instance, done) => {
         if (action === 'confirm') {
           if (!newName.trim()) {
             ElMessage.warning('文件夹名称不能为空')
@@ -273,7 +273,7 @@ const handleMoveFolder = async (folder: LibraryFolder) => {
       cancelButtonText: '取消',
       showCancelButton: true,
       customClass: 'folder-operation-message-box',
-      beforeClose: (action, instance, done) => {
+      beforeClose: (action, _instance, done) => {
         if (action === 'confirm') {
           if (!selectedTargetId) {
             ElMessage.warning('请选择目标文件夹')
@@ -358,7 +358,7 @@ const handleCopyFolder = async (folder: LibraryFolder) => {
       cancelButtonText: '取消',
       showCancelButton: true,
       customClass: 'folder-operation-message-box',
-      beforeClose: (action, instance, done) => {
+      beforeClose: (action, _instance, done) => {
         if (action === 'confirm') {
           if (!selectedTargetId) {
             ElMessage.warning('请选择目标文件夹')
