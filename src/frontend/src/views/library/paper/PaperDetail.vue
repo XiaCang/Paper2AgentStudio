@@ -89,11 +89,17 @@ const handlePreviewPdf = () => {
   emit('previewPdf', props.paper.id)
 }
 
-// 状态映射
+// 状态映射（中文显示）
+const statusTextMap: Record<LibraryPaper['status'], string> = {
+  Processing: '处理中',
+  PendingConfirmation: '未确认',
+  Confirmed: '已确认',
+}
+
 const statusClassMap: Record<LibraryPaper['status'], string> = {
   Processing: 'is-warning',
-  Completed: 'is-success',
-  'Awaiting Review': 'is-brand',
+  PendingConfirmation: 'is-brand',
+  Confirmed: 'is-success',
 }
 </script>
 
@@ -130,7 +136,7 @@ const statusClassMap: Record<LibraryPaper['status'], string> = {
           <div class="meta-item">
             <span class="meta-label">状态：</span>
             <span class="status-pill" :class="statusClassMap[paper.status]">
-              {{ paper.status }}
+              {{ statusTextMap[paper.status] }}
             </span>
           </div>
         </div>

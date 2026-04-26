@@ -17,7 +17,7 @@ export interface LibraryPaper {
   title: string
   authors: string
   year: number
-  status: 'Processing' | 'Completed' | 'Awaiting Review'
+  status: 'Processing' | 'PendingConfirmation' | 'Confirmed'
   source: string
   keyPoints: PaperKeyPoints  // 改为结构化对象
 }

@@ -108,7 +108,7 @@ const papers = ref<LibraryPaper[]>([
     title: 'Transformers in Poraios and Grapheni Methods',
     authors: 'R. K. Rainur',
     year: 2023,
-    status: 'Completed',
+    status: 'PendingConfirmation',
     source: 'arXiv',
     keyPoints: {
       background: '多模态数据对齐和检索存在语义鸿沟问题',
@@ -122,7 +122,7 @@ const papers = ref<LibraryPaper[]>([
     title: 'Transformers in Vision',
     authors: 'R. S. Soft',
     year: 2023,
-    status: 'Completed',
+    status: 'Confirmed',
     source: 'NeurIPS',
     keyPoints: {
       background: '域适应和零样本迁移在实际应用中面临挑战',
@@ -136,7 +136,7 @@ const papers = ref<LibraryPaper[]>([
     title: 'Transformers in Vision',
     authors: 'R. C. Bamer, R.A',
     year: 2022,
-    status: 'Awaiting Review',
+    status: 'PendingConfirmation',
     source: 'ICLR',
     keyPoints: {
       background: '传统序列模型的训练效率和并行化能力不足',
@@ -150,7 +150,7 @@ const papers = ref<LibraryPaper[]>([
     title: 'Transformens and Meal Designers in Vision',
     authors: 'A. Steruan R. Maris',
     year: 2023,
-    status: 'Completed',
+    status: 'Confirmed',
     source: 'ECCV',
     keyPoints: {
       background: '视觉模型训练需要大量数据和计算资源',
@@ -288,7 +288,7 @@ const handleSaveKeyPoints = async (paperId: string, keyPoints: PaperKeyPoints) =
     const paper = papers.value.find((item) => item.id === paperId)
     if (paper) {
       paper.keyPoints = keyPoints
-      paper.status = 'Completed'
+      paper.status = 'Confirmed'  // 确认后状态变为已确认
     }
     
     ElMessage.success('关键点已保存到服务器')
@@ -305,10 +305,17 @@ const handlePreviewPdf = (paperId: string) => {
   // 例如：window.open(`/papers/${paperId}/pdf`, '_blank')
 }
 
+// 状态映射（中文显示）
+const statusTextMap: Record<LibraryPaper['status'], string> = {
+  Processing: '处理中',
+  PendingConfirmation: '未确认',
+  Confirmed: '已确认',
+}
+
 const statusClassMap: Record<LibraryPaper['status'], string> = {
   Processing: 'is-warning',
-  Completed: 'is-success',
-  'Awaiting Review': 'is-brand',
+  PendingConfirmation: 'is-brand',
+  Confirmed: 'is-success',
 }
 </script>
 
@@ -355,7 +362,7 @@ const statusClassMap: Record<LibraryPaper['status'], string> = {
           <el-table-column label="Status" width="170">
             <template #default="{ row }">
               <span class="status-pill" :class="statusClassMap[row.status as LibraryPaper['status']]">
-                {{ row.status }}
+                {{ statusTextMap[row.status as LibraryPaper['status']] }}
               </span>
             </template>
           </el-table-column>
