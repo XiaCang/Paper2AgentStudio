@@ -3,8 +3,10 @@ import { EditPen, FolderOpened, Search } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, ref } from 'vue'
 
-import type { LibraryPaper } from '../../api/library'
+import type { LibraryPaper, PaperKeyPoints } from '../../api/library'
+import { saveKeyPointsApi } from '../../api/library'
 import LibraryFolder from './LibraryFolder.vue'
+import PaperDetail from './paper/PaperDetail.vue'
 
 interface LibraryFolder {
   id: string
@@ -15,12 +17,13 @@ interface LibraryFolder {
 
 const searchQuery = ref('')
 const selectedPaperId = ref('paper-4')
-const draftKeyPoints = ref('1. Attention mechanism\n2. Parallel processing\n3. Reduced training time')
 const folderPanelVisible = ref(true)
 const selectedFolderId = ref<string>('all')
 const editingFolderId = ref<string | null>(null)
 const editingFolderName = ref('')
 const expandedFolders = ref<Set<string>>(new Set())
+const paperDetailVisible = ref(false)
+const selectedPaper = ref<LibraryPaper | null>(null)
 
 const folders = ref<LibraryFolder[]>([
   {
@@ -93,7 +96,12 @@ const papers = ref<LibraryPaper[]>([
     year: 2022,
     status: 'Processing',
     source: 'CVPR',
-    keyPoints: ['Visual tokenization', 'Scalable encoder blocks'],
+    keyPoints: {
+      background: '视觉任务中传统CNN的局限性，需要更好的长距离依赖建模',
+      method: '将图像分割为visual tokens，使用Transformer编码器处理',
+      innovation: '首次将纯Transformer架构应用于计算机视觉任务',
+      conclusion: 'ViT在大规模数据集上可以达到甚至超越SOTA CNN的性能'
+    },
   },
   {
     id: 'paper-2',
@@ -102,7 +110,12 @@ const papers = ref<LibraryPaper[]>([
     year: 2023,
     status: 'Completed',
     source: 'arXiv',
-    keyPoints: ['Cross-modal alignment', 'Hybrid retrieval'],
+    keyPoints: {
+      background: '多模态数据对齐和检索存在语义鸿沟问题',
+      method: '采用跨模态对齐技术和混合检索策略',
+      innovation: '提出新颖的跨模态表示学习方法',
+      conclusion: '显著提升了跨模态检索的准确性和效率'
+    },
   },
   {
     id: 'paper-3',
@@ -111,7 +124,12 @@ const papers = ref<LibraryPaper[]>([
     year: 2023,
     status: 'Completed',
     source: 'NeurIPS',
-    keyPoints: ['Domain adaptation', 'Zero-shot transfer'],
+    keyPoints: {
+      background: '域适应和零样本迁移在实际应用中面临挑战',
+      method: '利用领域自适应技术和零样本学习框架',
+      innovation: '设计了新的域不变特征提取器',
+      conclusion: '在多个基准测试中实现了优异的零样本迁移性能'
+    },
   },
   {
     id: 'paper-4',
@@ -120,7 +138,12 @@ const papers = ref<LibraryPaper[]>([
     year: 2022,
     status: 'Awaiting Review',
     source: 'ICLR',
-    keyPoints: ['Attention mechanism', 'Parallel processing', 'Reduced training time'],
+    keyPoints: {
+      background: '传统序列模型的训练效率和并行化能力不足',
+      method: '引入自注意力机制实现并行处理',
+      innovation: 'Attention机制大幅减少训练时间并提升模型表现',
+      conclusion: 'Transformer成为NLP和CV领域的基础架构'
+    },
   },
   {
     id: 'paper-5',
@@ -129,7 +152,12 @@ const papers = ref<LibraryPaper[]>([
     year: 2023,
     status: 'Completed',
     source: 'ECCV',
-    keyPoints: ['Dataset efficiency', 'Training recipe'],
+    keyPoints: {
+      background: '视觉模型训练需要大量数据和计算资源',
+      method: '优化数据集效率和训练配方设计',
+      innovation: '提出更高效的训练策略和数据增强方法',
+      conclusion: '在减少资源消耗的同时保持了模型性能'
+    },
   },
 ])
 
@@ -154,55 +182,41 @@ const filteredPapers = computed(() => {
 })
 
 const handleReview = (paper: LibraryPaper) => {
+  selectedPaper.value = paper
   selectedPaperId.value = paper.id
-  draftKeyPoints.value = paper.keyPoints.map((item, index) => `${index + 1}. ${item}`).join('\n')
+  // 不再需要初始化draftKeyPoints，由PaperDetail组件内部管理
+  paperDetailVisible.value = true
+}
+
+// 保存关键点（从抽屉组件触发）
+const handleSaveKeyPoints = async (paperId: string, keyPoints: PaperKeyPoints) => {
+  try {
+    await saveKeyPointsApi(paperId, keyPoints)
+    
+    // 更新本地数据
+    const paper = papers.value.find((item) => item.id === paperId)
+    if (paper) {
+      paper.keyPoints = keyPoints
+      paper.status = 'Completed'
+    }
+    
+    ElMessage.success('关键点已保存到服务器')
+  } catch (error) {
+    ElMessage.error('保存失败，请重试')
+    console.error('保存关键点失败:', error)
+  }
+}
+
+// 预览 PDF
+const handlePreviewPdf = (paperId: string) => {
+  ElMessage.info(`预览论文 PDF: ${paperId}`)
+  // TODO: 实现 PDF 预览功能，可以打开新窗口或嵌入 PDF 查看器
+  // 例如：window.open(`/papers/${paperId}/pdf`, '_blank')
 }
 
 const handleSave = () => {
-  const paper = papers.value.find((item) => item.id === selectedPaperId.value)
-  if (!paper) {
-    return
-  }
-
-  paper.keyPoints = draftKeyPoints.value
-    .split('\n')
-    .map((item) => item.trim().replace(/^\d+\.\s*/, ''))
-    .filter(Boolean)
-  paper.status = 'Completed'
-  ElMessage.success('Key Points saved locally. Replace with saveKeyPointsApi later.')
-}
-
-// 处理文件夹相关事件
-const handleCreateFolderEvent = async () => {
-  try {
-    const { value: folderName } = await ElMessageBox.prompt('请输入文件夹名称', '新建文件夹', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      inputPattern: /\S+/,
-      inputErrorMessage: '文件夹名称不能为空',
-    })
-    
-    const newFolder: LibraryFolder = {
-      id: `folder-${Date.now()}`,
-      name: folderName,
-      paperIds: [],
-    }
-    
-    folders.value.push(newFolder)
-    ElMessage.success('文件夹创建成功')
-  } catch {
-    // 用户取消操作
-  }
-}
-
-const handleCreateRootFolderEvent = (folder: LibraryFolder) => {
-  folders.value.push(folder)
-  ElMessage.success('文件夹创建成功')
-}
-
-const handleEditFolderEvent = (folder: LibraryFolder) => {
-  editingFolderId.value = folder.id
-  editingFolderName.value = folder.name
+  // 此方法已被PaperDetail组件中的handleSaveKeyPoints替代
+  ElMessage.info('请使用论文详情抽屉中的保存功能')
 }
 
 const statusClassMap: Record<LibraryPaper['status'], string> = {
@@ -220,6 +234,14 @@ const statusClassMap: Record<LibraryPaper['status'], string> = {
       v-model:expanded-folders="expandedFolders"
       v-model:folder-panel-visible="folderPanelVisible"
       :folders="folders"
+    />
+
+    <!-- 论文详情抽屉 -->
+    <PaperDetail
+      v-model="paperDetailVisible"
+      :paper="selectedPaper"
+      @save="handleSaveKeyPoints"
+      @preview-pdf="handlePreviewPdf"
     />
 
     <!-- 主内容区 -->
@@ -262,29 +284,7 @@ const statusClassMap: Record<LibraryPaper['status'], string> = {
         </el-table>
       </section>
 
-      <section class="library-review">
-        <div class="library-review__header">
-          <div>
-            <h2 class="section-title">Key Points Review</h2>
-            <p class="section-description">这里是后续对接异步提炼结果和人工校对的入口区域。</p>
-          </div>
-          <span class="status-pill is-brand">
-            <el-icon><FolderOpened /></el-icon>
-            {{ selectedPaperId }}
-          </span>
-        </div>
-
-        <el-input
-          v-model="draftKeyPoints"
-          type="textarea"
-          :rows="8"
-          placeholder="Review and edit extracted key points..."
-        />
-
-        <div class="library-review__actions">
-          <el-button type="primary" @click="handleSave">Save</el-button>
-        </div>
-      </section>
+      <!-- 移除旧的Key Points Review区域，因为现在使用PaperDetail抽屉 -->
     </div>
   </section>
 </template>
@@ -349,24 +349,6 @@ const statusClassMap: Record<LibraryPaper['status'], string> = {
 .library-table {
   padding: 0.8rem 0 1rem;
   border-bottom: 1px solid var(--line-soft);
-}
-
-.library-review__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 0.8rem;
-}
-
-.library-review {
-  padding-top: 1rem;
-}
-
-.library-review__actions {
-  display: flex;
-  justify-content: flex-start;
-  margin-top: 0.8rem;
 }
 
 @media (max-width: 820px) {

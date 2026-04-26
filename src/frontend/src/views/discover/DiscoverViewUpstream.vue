@@ -15,7 +15,12 @@ const libraryPapers = ref<LibraryPaper[]>([
     year: 2022,
     status: 'Completed',
     source: 'CVPR',
-    keyPoints: ['Visual tokenization', 'Scalable encoder blocks'],
+    keyPoints: {
+      background: '视觉任务中传统CNN的局限性，需要更好的长距离依赖建模',
+      method: '将图像分割为visual tokens，使用Transformer编码器处理',
+      innovation: '首次将纯Transformer架构应用于计算机视觉任务',
+      conclusion: 'ViT在大规模数据集上可以达到甚至超越SOTA CNN的性能'
+    },
   },
   {
     id: 'paper-2',
@@ -24,7 +29,12 @@ const libraryPapers = ref<LibraryPaper[]>([
     year: 2023,
     status: 'Completed',
     source: 'arXiv',
-    keyPoints: ['Cross-modal alignment', 'Hybrid retrieval'],
+    keyPoints: {
+      background: '多模态数据对齐和检索存在语义鸿沟问题',
+      method: '采用跨模态对齐技术和混合检索策略',
+      innovation: '提出新颖的跨模态表示学习方法',
+      conclusion: '显著提升了跨模态检索的准确性和效率'
+    },
   },
   {
     id: 'paper-3',
@@ -33,7 +43,12 @@ const libraryPapers = ref<LibraryPaper[]>([
     year: 2023,
     status: 'Completed',
     source: 'NeurIPS',
-    keyPoints: ['Domain adaptation', 'Zero-shot transfer'],
+    keyPoints: {
+      background: '域适应和零样本迁移在实际应用中面临挑战',
+      method: '利用领域自适应技术和零样本学习框架',
+      innovation: '设计了新的域不变特征提取器',
+      conclusion: '在多个基准测试中实现了优异的零样本迁移性能'
+    },
   },
   {
     id: 'paper-4',
@@ -42,7 +57,12 @@ const libraryPapers = ref<LibraryPaper[]>([
     year: 2022,
     status: 'Completed',
     source: 'ICLR',
-    keyPoints: ['Attention mechanism', 'Parallel processing', 'Reduced training time'],
+    keyPoints: {
+      background: '传统序列模型的训练效率和并行化能力不足',
+      method: '引入自注意力机制实现并行处理',
+      innovation: 'Attention机制大幅减少训练时间并提升模型表现',
+      conclusion: 'Transformer成为NLP和CV领域的基础架构'
+    },
   },
 ])
 

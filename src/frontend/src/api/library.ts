@@ -2,6 +2,16 @@ import request from '../network/request'
 
 // ==================== 论文相关接口 ====================
 
+/**
+ * 论文关键点(四维度结构化数据)
+ */
+export interface PaperKeyPoints {
+  background: string      // 研究背景：该研究试图解决什么问题？
+  method: string          // 研究方法：采用了何种技术路径或实验设计？
+  innovation: string      // 创新点：与现有工作相比，独特贡献是什么？
+  conclusion: string      // 结论：研究得出了何种关键发现？
+}
+
 export interface LibraryPaper {
   id: string
   title: string
@@ -9,7 +19,7 @@ export interface LibraryPaper {
   year: number
   status: 'Processing' | 'Completed' | 'Awaiting Review'
   source: string
-  keyPoints: string[]
+  keyPoints: PaperKeyPoints  // 改为结构化对象
 }
 
 /**
@@ -20,7 +30,7 @@ export const fetchLibraryApi = () => request.get('/papers')
 /**
  * 保存论文关键点
  */
-export const saveKeyPointsApi = (paperId: string, keyPoints: string[]) =>
+export const saveKeyPointsApi = (paperId: string, keyPoints: PaperKeyPoints) =>
   request.patch(`/papers/${paperId}/key-points`, { keyPoints })
 
 // ==================== 文件夹相关接口 ====================
