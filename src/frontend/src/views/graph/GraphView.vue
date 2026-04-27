@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, reactive, watch } from 'vue'
+import { ref, onMounted, onUnmounted, reactive, watch, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import * as echarts from 'echarts'
 import { ElMessage } from 'element-plus'
 import GraphNodeDetail from './GraphNodeDetail.vue'
+import GraphFolder from './GraphFolder.vue'
 import type { LibraryPaper } from '../../api/library'
 
 // --- 类型定义 ---
@@ -40,6 +41,42 @@ const isLoading = ref(false)
 const nodeDetailVisible = ref(false)
 const selectedNodeData = ref<GraphNode | null>(null)
 
+// 文件夹面板状态（使用 v-model 双向绑定）
+const folderPanelVisible = ref(true)
+const selectedFolderId = ref<string>('all')
+const expandedFolders = ref<Set<string>>(new Set(['all']))
+
+// 计算主内容区的左边距（根据文件夹面板状态）
+const mainContentMarginLeft = computed(() => {
+  return folderPanelVisible.value ? '280px' : '0px'
+})
+
+// 模拟文件夹数据（与文库模块保持一致）
+const folders = ref([
+  {
+    id: 'folder-1',
+    name: '深度学习',
+    paperIds: ['p1', 'p2'],
+    children: [
+      {
+        id: 'folder-1-1',
+        name: 'Transformer',
+        paperIds: ['p1'],
+      },
+    ],
+  },
+  {
+    id: 'folder-2',
+    name: '计算机视觉',
+    paperIds: ['p1'],
+  },
+  {
+    id: 'folder-3',
+    name: '自然语言处理',
+    paperIds: ['p2', 'p3'],
+  },
+])
+
 // 筛选器状态（默认全部为 false，只显示论文节点）
 const filters = reactive({
   background: false,
@@ -51,6 +88,18 @@ const filters = reactive({
 // 缓存图谱数据，用于筛选时重新渲染
 let cachedNodes: GraphNode[] = []
 let cachedLinks: GraphLink[] = []
+
+// 递归查找文件夹（保留用于图谱筛选逻辑）
+const findFolderById = (folders: any[], folderId: string): any => {
+  for (const folder of folders) {
+    if (folder.id === folderId) return folder
+    if (folder.children) {
+      const found = findFolderById(folder.children, folderId)
+      if (found) return found
+    }
+  }
+  return null
+}
 
 // 画布高度控制
 const canvasHeight = ref(600) // 初始高度 600px
@@ -353,14 +402,51 @@ const renderChart = (nodes: GraphNode[], links: GraphLink[]) => {
   cachedNodes = nodes
   cachedLinks = links
 
-  // 根据筛选器过滤节点（论文节点始终显示）
+  // 根据文件夹筛选论文节点
+  let paperIdsToShow: Set<string> = new Set()
+  if (selectedFolderId.value === 'all') {
+    // 显示所有论文
+    paperIdsToShow = new Set(nodes.filter(n => n.type === 'paper').map(n => n.id))
+  } else {
+    // 获取选中文件夹及其子文件夹中的所有论文ID
+    const getPaperIdsFromFolder = (folderId: string): string[] => {
+      const folder = findFolderById(folders.value, folderId)
+      if (!folder) return []
+      
+      let paperIds = [...folder.paperIds]
+      if (folder.children) {
+        folder.children.forEach((child: any) => {
+          paperIds = paperIds.concat(getPaperIdsFromFolder(child.id))
+        })
+      }
+      return paperIds
+    }
+    
+    const folderPaperIds = getPaperIdsFromFolder(selectedFolderId.value)
+    paperIdsToShow = new Set(folderPaperIds)
+  }
+
+  // 根据筛选器过滤节点类型
   const visibleTypes: NodeType[] = ['paper']
   if (filters.background) visibleTypes.push('background')
   if (filters.method) visibleTypes.push('method')
   if (filters.innovation) visibleTypes.push('innovation')
   if (filters.conclusion) visibleTypes.push('conclusion')
 
-  const filteredNodes = nodes.filter(n => visibleTypes.includes(n.type))
+  // 综合过滤：既要符合类型要求，又要属于选中的文件夹
+  const filteredNodes = nodes.filter(n => {
+    // 首先检查节点类型
+    if (!visibleTypes.includes(n.type)) return false
+    
+    // 如果是论文节点，检查是否在选中的文件夹中
+    if (n.type === 'paper' && !paperIdsToShow.has(n.id)) return false
+    
+    // 如果是四要素节点，检查其关联的论文是否在选中的文件夹中
+    if (n.type !== 'paper' && n.paperId && !paperIdsToShow.has(n.paperId)) return false
+    
+    return true
+  })
+  
   const nodeIds = new Set(filteredNodes.map(n => n.id))
   const filteredLinks = links.filter(l => nodeIds.has(l.source) && nodeIds.has(l.target))
 
@@ -550,6 +636,16 @@ watch(
   { deep: true }
 )
 
+// 监听文件夹选择变化，重新渲染图谱
+watch(
+  () => selectedFolderId.value,
+  () => {
+    if (cachedNodes.length > 0 && cachedLinks.length > 0) {
+      renderChart(cachedNodes, cachedLinks)
+    }
+  }
+)
+
 // 从节点详情跳转到论文PDF预览页
 const handleNavigateToPaper = (paperId: string) => {
   // 关闭节点详情抽屉
@@ -624,22 +720,24 @@ const handleResize = () => chartInstance?.resize()
 onMounted(() => {
   fetchGraphData()
   window.addEventListener('resize', handleResize)
-  // 移除冗余的 chartInstance 初始化,由 renderChart 统一处理并绑定事件
 })
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
-  // 清理可能残留的拖拽监听器
-  if (isResizing) {
-    document.removeEventListener('mousemove', handleResizeMove)
-    document.removeEventListener('mouseup', stopResize)
-  }
   chartInstance?.dispose()
 })
 </script>
 
 <template>
-  <section class="graph-page">
+  <section class="graph-page" :style="{ marginLeft: mainContentMarginLeft }">
+    <!-- 使用提取的 GraphFolder 组件 -->
+    <GraphFolder
+      v-model="folderPanelVisible"
+      v-model:selected-folder-id="selectedFolderId"
+      :folders="folders"
+      @toggle-expand="(id) => expandedFolders.has(id) ? expandedFolders.delete(id) : expandedFolders.add(id)"
+    />
+
     <header class="graph-header">
       <div class="header-left">
         <h1 class="section-title">Knowledge Graph</h1>
@@ -705,6 +803,8 @@ onUnmounted(() => {
   height: 100%;
   padding: 0 1.5rem 1.5rem;
   overflow-y: auto;
+  position: relative;
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .graph-header { 
@@ -853,5 +953,138 @@ onUnmounted(() => {
 :deep(.el-checkbox__label) {
   font-size: 13px;
   padding-left: 6px !important;
+}
+</style>
+
+<style>
+/* 文件夹操作弹窗全局样式 */
+.folder-operation-message-box {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.folder-operation-message-box .el-message-box__header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.folder-operation-message-box .el-message-box__title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.folder-operation-message-box .el-message-box__content {
+  padding: 24px;
+}
+
+.folder-operation-message-box .el-message-box__btns {
+  padding: 16px 24px 24px;
+}
+
+.folder-operation-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dialog-tip {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+/* 文件夹选择器样式 - 全局样式以确保正确应用 */
+.folder-select {
+  width: 100%;
+}
+
+.folder-select .el-input__wrapper,
+.folder-select .el-select__wrapper {
+  background-color: #ffffff !important;
+  box-shadow: none !important;
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.folder-select .el-input__wrapper:hover,
+.folder-select .el-select__wrapper:hover {
+  box-shadow: 0 0 0 1px var(--brand-light) inset !important;
+}
+
+.folder-select .el-input__wrapper.is-focus,
+.folder-select .el-select__wrapper.is-focus {
+  box-shadow: 0 0 0 1px var(--brand) inset !important;
+}
+
+.folder-select .el-input__inner {
+  color: var(--text-primary);
+  background-color: transparent;
+}
+
+.folder-select .el-input__suffix {
+  color: var(--text-secondary);
+}
+
+.folder-select .el-input__suffix-inner {
+  color: var(--text-secondary);
+}
+
+/* 下拉选项样式 */
+.folder-select .el-select-dropdown {
+  background-color: #ffffff;
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.folder-select .el-select-dropdown__item {
+  color: var(--text-primary);
+}
+
+.folder-select .el-select-dropdown__item.hover,
+.folder-select .el-select-dropdown__item:hover {
+  background-color: var(--bg-secondary);
+}
+
+.folder-select .el-select-dropdown__item.selected {
+  color: var(--brand);
+  font-weight: 600;
+}
+
+.dialog-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--text-primary);
+  background: white;
+  transition: all 0.2s;
+  outline: none;
+}
+
+.dialog-input:focus {
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(64, 158, 255, 0.1);
+}
+
+.dialog-input::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.6;
+}
+
+.dialog-warning {
+  color: var(--danger);
+  font-weight: 500;
+}
+
+.dialog-hint {
+  margin: 8px 0 0 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
 }
 </style>
