@@ -15,9 +15,12 @@ interface Props {
   selectedFolderId: string
   expandedFolders: Set<string>
   allFolders: LibraryFolder[]
+  showActions?: boolean // 新增：是否显示操作按钮，默认为 true
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  showActions: true
+})
 
 const emit = defineEmits<{
   'select-folder': [folderId: string]
@@ -170,8 +173,9 @@ import { computed } from 'vue'
         <el-icon><Folder /></el-icon>
         <span class="folder-name">{{ folder.name }}</span>
         
-        <!-- 详情按钮 -->
+        <!-- 详情按钮 - 仅在 showActions 为 true 时显示 -->
         <el-icon 
+          v-if="showActions"
           class="more-icon"
           @click.stop="toggleDropdown"
         >

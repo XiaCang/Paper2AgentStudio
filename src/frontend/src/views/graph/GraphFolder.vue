@@ -135,6 +135,7 @@ const allFolders = computed(() => getAllFolders(props.folders))
               :selected-folder-id="selectedFolderId"
               :expanded-folders="expandedFolders"
               :all-folders="allFolders"
+              :show-actions="false"
               @select-folder="(id) => selectedFolderId = id"
               @toggle-expand="toggleFolderExpand"
             />
